@@ -9,7 +9,8 @@
 package Project_Zero
 import Console.{BOLD, RESET, UNDERLINED}
 import scala.io.StdIn._
-import java.sql.{Connection,DriverManager,ResultSet,Statement}
+import java.sql.{Connection, DriverManager, ResultSet, Statement}
+import scala.annotation.tailrec
 
 // created an object with main
 // and some function calls to handle game startup, running, and ending
@@ -18,7 +19,9 @@ object RunGame {
   def main(args: Array[String]): Unit = {
     // body of main goes here for run time
 
-   // startupFunctions.runStartUp()
+    startupFunctions.runStartUp()
+
+   // Connect_to_DB.check_Password("pastelcub", "baby")
 
     //below is for testing connection
 
@@ -28,8 +31,19 @@ object RunGame {
 
     //  Connect_to_DB.show_Databases()
 
-    Connect_to_DB.show_Usernames()
+    // Connect_to_DB.show_Usernames()
 
+    //check username func
+    /*
+    val check = Connect_to_DB.check_Username("pastelcub")
+    val check2 = Connect_to_DB.check_Username("babyboy")
+    println()
+    println()
+    println(check)
+    println()
+    println()
+    println(check2)
+    */
     //sys.exit(0)
   }
 
@@ -48,7 +62,7 @@ object startupFunctions {
     val gameName = "TrailBlazer"
     println("********************************")
     print("*********")
-    print(s"${BOLD} ${UNDERLINED}$gameName${RESET}")
+    print(s"$BOLD $UNDERLINED$gameName$RESET")
     println(" **********")
     println("********************************")
     println()
@@ -61,8 +75,9 @@ object startupFunctions {
 
   // get user input and compare to list of options and open based on comparison
   // options include login, options, and exit
+  @tailrec
   def titleScreenInputs(): Unit = {
-    val titleInput = userCommands.getInput()
+    val titleInput = userCommands.getInput
 
     if (titleInput == "login") {
       println("Login selected" + "\n")
@@ -70,6 +85,8 @@ object startupFunctions {
       loginFunctions.checkUsername()
     } else if (titleInput == "options") {
       println("Options selected" + "\n")
+      optionsFunctions.optionsScreen()
+      optionsFunctions.optionScreenInputs()
     } else if (titleInput == "exit") {
       println("Exit selected" + "\n" + "\n")
       sys.exit(0)
@@ -78,9 +95,6 @@ object startupFunctions {
       startupFunctions.titleScreenInputs()
     }
   }
-
-
-  // accounts table holds username, emailaddress, and password in sql with the possibility of adding saved state later
 
 }
 
@@ -91,23 +105,52 @@ object loginFunctions {
     val stringName = "LOGIN"
     println("********************************")
     print("*************")
-    print(s"${BOLD} ${UNDERLINED}$stringName${RESET}")
+    print(s"$BOLD $UNDERLINED$stringName$RESET")
     println(" ************")
     println("********************************")
     println()
   }
 
+  @tailrec
   def checkUsername(): Unit = {
-    val nameInput = userCommands.getUserName()
+    val nameInput = userCommands.getUserName
 
     if (nameInput == "back") {
       println("\n" +"\n")
       startupFunctions.runStartUp()
     } else {
-      println("hello")
-    }
+      val checkedName = Connect_to_DB.check_Username(nameInput)
+      if (checkedName) {
+        println("\n" + "Continue Logging in" + "\n")
+        checkPassword(nameInput)
+      } else {
+        println("I'm sorry, there is no record of that username.")
+        loginFunctions.checkUsername()
+      }
 
+    }
   }
+
+
+  @tailrec
+  def checkPassword(authUser: String): Unit = {
+    val passwordInput = userCommands.getUserPassword(authUser)
+
+    if (passwordInput == "back") {
+      println("\n" +"\n")
+      startupFunctions.runStartUp()
+    } else {
+      val checkedPassword = Connect_to_DB.check_Password(authUser,passwordInput)
+      if (checkedPassword) {
+        println("\n" + "Logged in" + "\n")
+      } else {
+        println("I'm sorry, that password is incorrect.")
+        loginFunctions.checkPassword(authUser)
+      }
+
+    }
+  }
+
 
 
 }
@@ -117,15 +160,36 @@ object optionsFunctions {
   def optionsScreen(): Unit = {
     val stringName = "OPTIONS"
     println("********************************")
-    print("*********")
-    print(s"${BOLD} ${UNDERLINED}$stringName${RESET}")
-    println(" **********")
+    print("************")
+    print(s"$BOLD $UNDERLINED$stringName$RESET")
+    println(" ***********")
     println("********************************")
     println()
-    println("\t" + "\t" + "     Login")
-    println("\t" + "\t" + "    Options")
-    println("\t" + "\t" + "     Exit")
+    println("\t" + "     Create New User")
+    println("\t" + "    Change User Password")
+    println("\t" + "    Delete Existing User")
+    println("\t" + "\t" + "      Back")
     println()
+  }
+
+  @tailrec
+  def optionScreenInputs(): Unit = {
+    val optionsInput = userCommands.getInput
+
+    if (optionsInput == "create new user") {
+      println("Create new user selected" + "\n")
+
+    } else if (optionsInput == "change user password") {
+      println("change user password selected" + "\n")
+    } else if (optionsInput == "delete existing user") {
+      println("Delete existing user selected" + "\n")
+    } else if (optionsInput == "back") {
+      println("Back selected" + "\n" + "\n")
+      startupFunctions.runStartUp()
+    } else {
+      println("I'm sorry, that is not one of the options above.")
+      optionsFunctions.optionScreenInputs()
+    }
   }
 
 
@@ -139,16 +203,21 @@ object optionsFunctions {
 object userCommands {
 
   //this function is for any user string inputs, returns lowercase string for boolean comparisons
-  def getInput(): String = {
+  def getInput: String = {
     val inputString = readLine("Please enter one of the above options: ")
     val inputToLower = inputString.toLowerCase
-    return inputToLower
+    inputToLower
   }
 
-  def getUserName(): String = {
+  def getUserName: String = {
     val inputString = readLine("Please enter existing username or 'back' to go back: ")
     val inputToLower = inputString.toLowerCase
-    return inputToLower
+    inputToLower
+  }
+
+  def getUserPassword(aUser: String): String = {
+    val inputPass = readLine(s"Please enter the password for $aUser or 'back' to go back: ")
+    inputPass
   }
 
 }
@@ -161,10 +230,10 @@ object Connect_to_DB {
   var connection:Connection = _
   def connect(): Unit = {
     val jdbcDatabase = "mysql"
-    val url = s"jdbc:mysql://localhost/${jdbcDatabase}"
+    val url = s"jdbc:mysql://localhost/$jdbcDatabase"
     // val driver = "com.mysql.jdbc.Driver" <- not necessary when added to classpath
     val username = "root"
-    val password = "Z3r02021!!"
+    val password = "abcd1234"
 
     try {
       // make the connection
@@ -180,7 +249,7 @@ object Connect_to_DB {
         println("host, user = " + host + ", " + user)
       }
     } catch {
-      case e: Exception => e.printStackTrace
+      case e: Exception => e.printStackTrace()
     }
     connection.close()
   }
@@ -188,9 +257,9 @@ object Connect_to_DB {
   //this function was created for debugging purposes
   def show_Databases(): Unit = {
     val jdbcDatabase = "projectzero"
-    val url = s"jdbc:mysql://localhost/${jdbcDatabase}"
+    val url = s"jdbc:mysql://localhost/$jdbcDatabase"
     val username = "root"
-    val password = "Z3r02021!!"
+    val password = "abcd1234"
 
     try {
       // make the connection
@@ -216,7 +285,7 @@ object Connect_to_DB {
 
 
     } catch {
-      case e: Exception => e.printStackTrace
+      case e: Exception => e.printStackTrace()
     }
     connection.close()
   }
@@ -224,9 +293,9 @@ object Connect_to_DB {
 
   def show_Usernames(): Unit = {
     val jdbcDatabase = "projectzero"
-    val url = s"jdbc:mysql://localhost/${jdbcDatabase}"
+    val url = s"jdbc:mysql://localhost/$jdbcDatabase"
     val username = "root"
-    val password = "Z3r02021!!"
+    val password = "abcd1234"
 
     try {
       // make the connection
@@ -253,12 +322,72 @@ object Connect_to_DB {
 
 
     } catch {
-      case e: Exception => e.printStackTrace
+      case e: Exception => e.printStackTrace()
     }
     connection.close()
   }
 
 
+
+  def check_Username(enteredUser: String): Boolean = {
+    val jdbcDatabase = "projectzero"
+    val url = s"jdbc:mysql://localhost/$jdbcDatabase"
+    val username = "root"
+    val password = "abcd1234"
+    var checkedName: Boolean = false
+
+    try {
+      // make the connection
+      connection = DriverManager.getConnection(url, username, password)
+      // create the statement, and run the select query
+      val statement = connection.createStatement()
+
+      //use to go through usernames and set boolean variable if found
+      val userSet = statement.executeQuery("SELECT username FROM projectzero.`project0-accounts`")
+      while ( userSet.next() ) {
+        if (userSet.getString(1).toLowerCase == enteredUser) {
+         checkedName = true
+        }
+      }
+
+    } catch {
+      case e: Exception => e.printStackTrace()
+    }
+    connection.close()
+
+    checkedName
+  }
+
+  def check_Password(enteredUID: String, enteredPass: String): Boolean = {
+    val jdbcDatabase = "projectzero"
+    val url = s"jdbc:mysql://localhost/$jdbcDatabase"
+    val username = "root"
+    val password = "abcd1234"
+    var checkedPass: Boolean = false
+
+    try {
+      // make the connection
+      connection = DriverManager.getConnection(url, username, password)
+      // create the statement, and run the select query
+      val statement = connection.createStatement()
+
+      //use to go through usernames and set boolean variable if found
+      val userSet = statement.executeQuery(s"SELECT password FROM projectzero.`project0-accounts` where username = '$enteredUID';")
+      while ( userSet.next() ) {
+       // print(userSet.getString(1))
+        //println()
+        if (userSet.getString(1) == enteredPass) {
+          checkedPass = true
+        }
+      }
+
+    } catch {
+      case e: Exception => e.printStackTrace()
+    }
+    connection.close()
+
+    checkedPass
+  }
 
 
 }
