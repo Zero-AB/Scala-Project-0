@@ -9,7 +9,7 @@
 package Project_Zero
 import Console.{BOLD, RESET, UNDERLINED}
 import scala.io.StdIn._
-import java.sql.{Connection, DriverManager, ResultSet, Statement}
+import java.sql.{Connection, DriverManager, PreparedStatement, ResultSet, Statement}
 import scala.annotation.tailrec
 
 // created an object with main
@@ -178,11 +178,13 @@ object optionsFunctions {
 
     if (optionsInput == "create new user") {
       println("Create new user selected" + "\n")
-
+      createUser()
     } else if (optionsInput == "change user password") {
       println("change user password selected" + "\n")
+      changePass()
     } else if (optionsInput == "delete existing user") {
       println("Delete existing user selected" + "\n")
+      deleteUser()
     } else if (optionsInput == "back") {
       println("Back selected" + "\n" + "\n")
       startupFunctions.runStartUp()
@@ -192,6 +194,41 @@ object optionsFunctions {
     }
   }
 
+  @tailrec
+  def createUser(): Unit = {
+    val newNameInput = userCommands.getNewUserName
+
+    if (newNameInput == "back") {
+      println("\n" +"\n")
+      optionsScreen()
+      optionScreenInputs()
+    } else {
+      val checkedNewName = Connect_to_DB.check_Username(newNameInput)
+      if (checkedNewName) {
+        println("I'm sorry, that username already exists.")
+        createUser()
+      } else {
+        val nameString = readLine("Please enter your name: ")
+        println()
+        val emailString = readLine("Please enter your email address: ")
+        println()
+        val passwordString = readLine("Please enter your password: ")
+        Connect_to_DB.create_NewUser(newNameInput,nameString,emailString,passwordString)
+      }
+
+    }
+
+  }
+
+  def changePass(): Unit = {
+
+
+  }
+
+  def deleteUser(): Unit = {
+
+
+  }
 
 }
 
@@ -211,6 +248,12 @@ object userCommands {
 
   def getUserName: String = {
     val inputString = readLine("Please enter existing username or 'back' to go back: ")
+    val inputToLower = inputString.toLowerCase
+    inputToLower
+  }
+
+  def getNewUserName: String = {
+    val inputString = readLine("Please enter new username or 'back' to go back: ")
     val inputToLower = inputString.toLowerCase
     inputToLower
   }
@@ -388,6 +431,42 @@ object Connect_to_DB {
 
     checkedPass
   }
+
+  def create_NewUser(enteredUID: String, enteredName: String, enteredEmail:String, enteredPass: String): Unit = {
+    val jdbcDatabase = "projectzero"
+    val url = s"jdbc:mysql://localhost/$jdbcDatabase"
+    val username = "root"
+    val password = "abcd1234"
+    val insertSql = """
+                      |INSERT INTO projectzero.`project0-accounts` (username,name,email,password)
+                      |VALUES (?,?,?,?)
+                    """.stripMargin
+
+    try {
+      // make the connection
+      connection = DriverManager.getConnection(url, username, password)
+      // create the prepared statement, and run the select query
+
+      val preparedStmt: PreparedStatement = connection.prepareStatement(insertSql)
+
+      preparedStmt.setString(1,s"$enteredUID")
+      preparedStmt.setString(2,s"$enteredName")
+      preparedStmt.setString(3,s"$enteredEmail")
+      preparedStmt.setString(4,s"$enteredPass")
+      preparedStmt.execute()
+
+      preparedStmt.close()
+
+
+    } catch {
+      case e: Exception => e.printStackTrace()
+    }
+    connection.close()
+
+  }
+
+
+
 
 
 }
