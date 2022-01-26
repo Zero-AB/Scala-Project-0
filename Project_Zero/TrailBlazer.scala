@@ -214,18 +214,90 @@ object optionsFunctions {
         println()
         val passwordString = readLine("Please enter your password: ")
         Connect_to_DB.create_NewUser(newNameInput,nameString,emailString,passwordString)
+        println("\n" + "User Created" + "\n")
+        optionsScreen()
+        optionScreenInputs()
       }
 
     }
 
   }
 
+  @tailrec
   def changePass(): Unit = {
+    val changePassNameInput = userCommands.getUserName
+
+    if (changePassNameInput == "back") {
+      println("\n" +"\n")
+      optionsScreen()
+      optionScreenInputs()
+    } else {
+      val checkedChangePassName = Connect_to_DB.check_Username(changePassNameInput)
+      if (checkedChangePassName) {
+        val changePasswordInput = userCommands.getUserPassword(changePassNameInput)
+        println("\n" + "Password Input" + "\n")
+        if (changePasswordInput == "back") {
+          println("\n" + "\n")
+          optionsScreen()
+          optionScreenInputs()
+        } else {
+          val checkedChangePassword = Connect_to_DB.check_Password(changePassNameInput, changePasswordInput)
+          if (checkedChangePassword) {
+            val newPassw = userCommands.getNewPass
+            Connect_to_DB.change_ExistingPass(changePassNameInput,newPassw)
+            println("\n" + "Password Changed" + "\n")
+            optionsScreen()
+            optionScreenInputs()
+          } else {
+            println("I'm sorry, that password is incorrect.")
+            changePass()
+          }
+        }
+      } else {
+        println("I'm sorry, there is no record of that username.")
+        changePass()
+      }
+    }
 
 
   }
 
+  @tailrec
   def deleteUser(): Unit = {
+    val deleteNameInput = userCommands.getUserName
+
+    if (deleteNameInput == "back") {
+      println("\n" +"\n")
+      optionsScreen()
+      optionScreenInputs()
+    } else {
+      val checkedDeleteName = Connect_to_DB.check_Username(deleteNameInput)
+      if (checkedDeleteName) {
+        val deletePasswordInput = userCommands.getUserPassword(deleteNameInput)
+        println("\n" + "Password Input" + "\n")
+        if (deletePasswordInput == "back") {
+          println("\n" +"\n")
+          optionsScreen()
+          optionScreenInputs()
+        } else {
+          val checkedDeletePassword = Connect_to_DB.check_Password(deleteNameInput,deletePasswordInput)
+          if (checkedDeletePassword) {
+            Connect_to_DB.delete_ExistingUser(deleteNameInput)
+            println("\n" + "User Deleted" + "\n")
+            optionsScreen()
+            optionScreenInputs()
+          } else {
+            println("I'm sorry, that password is incorrect.")
+            deleteUser()
+          }
+
+        }
+      } else {
+        println("I'm sorry, there is no record of that username.")
+        deleteUser()
+      }
+
+    }
 
 
   }
@@ -233,7 +305,11 @@ object optionsFunctions {
 }
 
 
-//create functions for running the game after logging in
+//create functions for running the program after logging in
+object loggedIn {
+
+  
+}
 
 
 // create a list of functions users can implement
@@ -261,6 +337,12 @@ object userCommands {
   def getUserPassword(aUser: String): String = {
     val inputPass = readLine(s"Please enter the password for $aUser or 'back' to go back: ")
     inputPass
+  }
+
+  def getNewPass: String = {
+    val inputString = readLine("Please enter new password: ")
+    val inputToLower = inputString.toLowerCase
+    inputToLower
   }
 
 }
@@ -457,6 +539,53 @@ object Connect_to_DB {
 
       preparedStmt.close()
 
+    } catch {
+      case e: Exception => e.printStackTrace()
+    }
+    connection.close()
+
+  }
+
+
+  def change_ExistingPass(enteredUID: String, newPass: String): Unit = {
+    val jdbcDatabase = "projectzero"
+    val url = s"jdbc:mysql://localhost/$jdbcDatabase"
+    val username = "root"
+    val password = "abcd1234"
+
+    try {
+      // make the connection
+      connection = DriverManager.getConnection(url, username, password)
+      // create the prepared statement, and run the select query
+
+      val preparedStmt: PreparedStatement = connection.prepareStatement(s"Update projectzero.`project0-accounts` SET password = '$newPass' WHERE username = '$enteredUID';")
+      preparedStmt.execute()
+
+      preparedStmt.close()
+
+    } catch {
+      case e: Exception => e.printStackTrace()
+    }
+    connection.close()
+
+  }
+
+
+  def delete_ExistingUser(enteredUID: String): Unit = {
+    val jdbcDatabase = "projectzero"
+    val url = s"jdbc:mysql://localhost/$jdbcDatabase"
+    val username = "root"
+    val password = "abcd1234"
+
+    try {
+      // make the connection
+      connection = DriverManager.getConnection(url, username, password)
+      // create the prepared statement, and run the select query
+
+      val preparedStmt: PreparedStatement = connection.prepareStatement(s"Delete FROM projectzero.`project0-accounts` where username = '$enteredUID';")
+      preparedStmt.execute()
+
+      preparedStmt.close()
 
     } catch {
       case e: Exception => e.printStackTrace()
