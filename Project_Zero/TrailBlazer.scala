@@ -21,6 +21,10 @@ object RunGame {
 
     startupFunctions.runStartUp()
 
+   // val x = Connect_to_DB.get_RealName("pastelcub")
+   // println(x)
+
+    //userCommands.getEntryNumber
    // Connect_to_DB.check_Password("pastelcub", "baby")
 
     //below is for testing connection
@@ -143,6 +147,8 @@ object loginFunctions {
       val checkedPassword = Connect_to_DB.check_Password(authUser,passwordInput)
       if (checkedPassword) {
         println("\n" + "Logged in" + "\n")
+        Connect_to_DB.create_UserJournal(authUser)
+        journalFunctions.journalTitleScreen(authUser)
       } else {
         println("I'm sorry, that password is incorrect.")
         loginFunctions.checkPassword(authUser)
@@ -306,9 +312,26 @@ object optionsFunctions {
 
 
 //create functions for running the program after logging in
-object loggedIn {
+object journalFunctions {
+  //display journal title screen and list of options
+  def journalTitleScreen(userID: String): Unit = {
+    val userLoggedIN = Connect_to_DB.get_RealName(userID)
+    val journalTitle = s"$userLoggedIN's Blood Pressure Journal"
+    println("**************************************************************")
+    print("  *********")
+    print(s"$BOLD $UNDERLINED$journalTitle$RESET")
+    println(" **********")
+    println("**************************************************************")
+    println()
+    println("\t" + "\t" + "\t" + "\t" + "        Review Entries")
+    println("\t" + "\t" + "\t" + "\t" + "         Create Entry")
+    println("\t" + "\t" + "\t" + "\t" + "         Update Entry")
+    println("\t" + "\t" + "\t" + "\t" + "         Delete Entry")
+    println("\t" + "\t" + "\t" + "\t" + "             Exit")
+    println()
+  }
 
-  
+
 }
 
 
@@ -343,6 +366,23 @@ object userCommands {
     val inputString = readLine("Please enter new password: ")
     val inputToLower = inputString.toLowerCase
     inputToLower
+  }
+
+  @tailrec
+  def getEntryNumber: Int = {
+    print("Please enter the number of the entry you would like to select: ")
+    try {
+      var inputInt = readInt()
+      while(inputInt < 0) {
+        print("Please enter a valid entry: ")
+        inputInt = readInt()
+      }
+      inputInt
+    }catch {
+      case _: NumberFormatException =>
+        println("That is not a valid entry!")
+        getEntryNumber
+    }
   }
 
 }
@@ -514,6 +554,40 @@ object Connect_to_DB {
     checkedPass
   }
 
+  def get_RealName(enteredUserID: String): String = {
+    val jdbcDatabase = "projectzero"
+    val url = s"jdbc:mysql://localhost/$jdbcDatabase"
+    val username = "root"
+    val password = "abcd1234"
+    var realName = ""
+
+    try {
+      // make the connection
+      connection = DriverManager.getConnection(url, username, password)
+      // create the statement, and run the select query
+      val statement = connection.createStatement()
+
+      //use to go through usernames and set boolean variable if found
+      val userSet = statement.executeQuery(s"SELECT name FROM projectzero.`project0-accounts` where username = '$enteredUserID';")
+
+      while ( userSet.next() ) {
+        realName = userSet.getString(1)
+         }
+
+    } catch {
+      case e: Exception => e.printStackTrace()
+    }
+    connection.close()
+
+    realName
+
+
+  }
+
+
+
+
+
   def create_NewUser(enteredUID: String, enteredName: String, enteredEmail:String, enteredPass: String): Unit = {
     val jdbcDatabase = "projectzero"
     val url = s"jdbc:mysql://localhost/$jdbcDatabase"
@@ -594,7 +668,28 @@ object Connect_to_DB {
 
   }
 
+  def create_UserJournal(enteredUID: String): Unit = {
+    val jdbcDatabase = "projectzero"
+    val url = s"jdbc:mysql://localhost/$jdbcDatabase"
+    val username = "root"
+    val password = "abcd1234"
 
+    try {
+      // make the connection
+      connection = DriverManager.getConnection(url, username, password)
+      // create the prepared statement, and run the select query
+
+      val preparedStmt: PreparedStatement = connection.prepareStatement(s"create table if not exists projectzero.`$enteredUID` (Entry mediumint not null auto_increment,`Date` Date, `Time` Time, `Upper/Systolic` int, `Lower/Diastolic` int, `Heart Rate` int, Notes longtext, primary key(Entry));")
+      preparedStmt.execute()
+
+      preparedStmt.close()
+
+    } catch {
+      case e: Exception => e.printStackTrace()
+    }
+    connection.close()
+
+  }
 
 
 
