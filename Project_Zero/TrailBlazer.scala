@@ -47,11 +47,11 @@ object startupFunctions {
 
   //display title screen and list of options
   def titlescreen(): Unit = {
-    val gameName = "TrailBlazer"
+    val gameName = "Heart Monitor"
     println("********************************")
-    print("*********")
+    print("********")
     print(s"$BOLD $UNDERLINED$gameName$RESET")
-    println(" **********")
+    println(" *********")
     println("********************************")
     println()
     println("\t" + "\t" + "     Login")
@@ -372,6 +372,7 @@ object journalFunctions {
 
     if (checkedNum) {
       //delete entry
+      Connect_to_DB.delete_JournalEntry(loggedID,entrynumber)
       println("Entry Deleted")
       journalTitleScreen(loggedID)
     }
@@ -783,7 +784,7 @@ object Connect_to_DB {
       connection = DriverManager.getConnection(url, username, password)
       // create the prepared statement, and run the select query
 
-      val preparedStmt: PreparedStatement = connection.prepareStatement(s"create table if not exists projectzero.`$enteredUID` (Entry mediumint not null auto_increment,`Date` Date, `Time` Time, `Upper/Systolic` int, `Lower/Diastolic` int, `Heart Rate` int, Notes longtext, primary key(Entry));")
+      val preparedStmt: PreparedStatement = connection.prepareStatement(s"create table if not exists projectzero.`$enteredUID` (Entry mediumint not null auto_increment,`Date` Date, `Time` Time, `Upper / Systolic` int, `Lower / Diastolic` int, `Heart Rate` int, Notes longtext, primary key(Entry));")
       preparedStmt.execute()
 
       preparedStmt.close()
@@ -924,6 +925,28 @@ object Connect_to_DB {
 
   }
 
+  def delete_JournalEntry(enteredUID: String, enteredEntry: Int): Unit = {
+    val jdbcDatabase = "projectzero"
+    val url = s"jdbc:mysql://localhost/$jdbcDatabase"
+    val username = "root"
+    val password = "abcd1234"
+
+    try {
+      // make the connection
+      connection = DriverManager.getConnection(url, username, password)
+      // create the prepared statement, and run the select query
+
+      val preparedStmt: PreparedStatement = connection.prepareStatement(s"Delete FROM projectzero.`$enteredUID` where entry = '$enteredEntry';")
+      preparedStmt.execute()
+
+      preparedStmt.close()
+
+    } catch {
+      case e: Exception => e.printStackTrace()
+    }
+    connection.close()
+
+  }
 
 
 }
